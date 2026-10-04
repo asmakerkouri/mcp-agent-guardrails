@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - name: Tests (policy, redaction, agent + real MCP server over stdio)
+        run: pytest -q
+      - name: Red-team benchmark
+        run: PYTHONPATH=src python eval/redteam.py
+      - name: Red-team demo (scripted hijacked model)
+        run: PYTHONPATH=src python scripts/demo.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-and-results
+          path: |
+            output/trace.jsonl
+            eval/results/

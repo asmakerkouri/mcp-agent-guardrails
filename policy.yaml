@@ -1,0 +1,39 @@
+# Guardrail policy applied between the LLM and every MCP tool call.
+max_tool_calls: 12            # budget per task, stops runaway loops
+
+tools:                        # allow | ask (human approval) | deny
+  list_files: allow
+  read_file: allow
+  search_text: allow
+  write_file: ask
+  fetch_url: allow
+  "*": deny                   # any tool not listed above
+
+paths:                        # applied to every argument named "path"
+  deny:
+    - ".env"
+    - "**/.env"
+    - ".git/**"
+    - "secrets/**"
+    - "**/*.pem"
+    - "**/*.key"
+    - "**/id_rsa*"
+
+urls:                         # applied to every argument named "url"
+  allow_domains: [arxiv.org, export.arxiv.org, en.wikipedia.org, api.github.com, docs.python.org]
+  https_only: true
+
+redact:                       # secrets removed from tool outputs before the LLM sees them
+  aws_access_key: "AKIA[0-9A-Z]{16}"
+  openai_key: "sk-[A-Za-z0-9_-]{20,}"
+  github_token: "gh[pousr]_[A-Za-z0-9]{36}"
+  private_key: "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+  password_assignment: "(?i)(password|passwd|secret)\\s*[:=]\\s*\\S+"
+
+injection_patterns:           # tool outputs matching these are flagged as untrusted
+  - "(?i)ignore (all |any )?(the )?(previous|prior|above) (instructions|prompts?)"
+  - "(?i)disregard (your|the) (instructions|system prompt|rules)"
+  - "(?i)you are now (a|an|in) "
+  - "(?i)(send|post|upload|exfiltrate) .{0,40}(\\.env|password|api[_ ]?key|secret|token|credentials)"
+  - "(?i)new (system )?instructions?:"
+  - "(?i)do not (tell|inform) the user"

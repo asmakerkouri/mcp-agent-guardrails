@@ -1,0 +1,5 @@
+robot: atlas-01
+camera: luxonis-oak-tof
+database:
+  host: localhost
+  password: demo-not-a-real-password
